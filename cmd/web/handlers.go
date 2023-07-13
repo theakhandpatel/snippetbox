@@ -201,6 +201,7 @@ func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	app.sessionManager.Put(r.Context(), "authenticatedUserID", id)
+
 	http.Redirect(w, r, "/snippet/create", http.StatusSeeOther)
 
 }
@@ -217,6 +218,19 @@ func (app *application) userLogoutPost(w http.ResponseWriter, r *http.Request) {
 
 	app.sessionManager.Put(r.Context(), "flash", "You've bene logged out successfully")
 	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func (app *application) userAccount(w http.ResponseWriter, r *http.Request) {
+	id := app.sessionManager.GetInt(r.Context(), "authenticatedUserID")
+	user, err := app.users.GetUserByID(id)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	data := app.newTemplateData(r)
+	data.User = user
+	app.render(w, http.StatusOK, "account.tmpl", data)
 }
 
 func ping(w http.ResponseWriter, r *http.Request) {
