@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/justinas/nosurf"
 )
@@ -44,6 +46,7 @@ func (app *application) recoverPanic(next http.Handler) http.Handler {
 func (app *application) requireAuthentication(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !app.isAuthenticated(r) {
+			app.sessionManager.Put(r.Context(), "Redirect", r.URL.Path)
 			http.Redirect(w, r, "/user/login", http.StatusSeeOther)
 			return
 		}
@@ -84,6 +87,24 @@ func (app *application) authenticate(next http.Handler) http.Handler {
 			r = r.WithContext(ctx)
 		}
 
+		next.ServeHTTP(w, r)
+	})
+}
+
+// CacheControlMiddleware sets cache policy headers on the HTTP responses.
+func (app *application) cacheControl(maxAge time.Duration, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Set Cache-Control header
+		cacheControl := "public, max-age=" + strconv.FormatInt(int64(maxAge.Seconds()), 10) +
+			", stale-while-revalidate=" + strconv.FormatInt(int64(maxAge.Seconds()), 10)
+		w.Header().Set("Cache-Control", cacheControl)
+
+		// Set Expires header
+		expiresTime := time.Now().Add(maxAge)
+		expires := expiresTime.UTC().Format(http.TimeFormat)
+		w.Header().Set("Expires", expires)
+
+		// Call the next handler
 		next.ServeHTTP(w, r)
 	})
 }

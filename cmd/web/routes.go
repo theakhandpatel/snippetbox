@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/justinas/alice"
@@ -16,7 +17,10 @@ func (app *application) routes() http.Handler {
 	})
 
 	fileServer := http.FileServer(http.FS(ui.Files))
-	router.Handler(http.MethodGet, "/static/*filepath", fileServer)
+	staticFileHandler := app.cacheControl(1*time.Hour, fileServer) // Set cache-control header to 30 days
+
+	router.Handler(http.MethodGet, "/static/*filepath", staticFileHandler)
+	// router.Handler(http.MethodGet, "/static/*filepath", fileServer)
 
 	router.HandlerFunc(http.MethodGet, "/ping", ping)
 	// non-authenticated application routes
@@ -37,6 +41,8 @@ func (app *application) routes() http.Handler {
 	router.Handler(http.MethodPost, "/snippet/create", protected.ThenFunc(app.snippetCreatePost))
 	router.Handler(http.MethodPost, "/user/logout", protected.ThenFunc(app.userLogoutPost))
 	router.Handler(http.MethodGet, "/user/me", protected.ThenFunc(app.userAccount))
+	router.Handler(http.MethodGet, "/user/password/update", protected.ThenFunc(app.changePassword))
+	router.Handler(http.MethodPost, "/user/password/update", protected.ThenFunc(app.changePasswordPost))
 
 	standard := alice.New(app.recoverPanic, app.logRequest, secureHeaders)
 

@@ -1,6 +1,11 @@
 package mocks
 
-import "github.com/theakhandpatel/snippetbox/internal/models"
+import (
+	"fmt"
+	"time"
+
+	"github.com/theakhandpatel/snippetbox/internal/models"
+)
 
 type UserModel struct{}
 
@@ -25,4 +30,26 @@ func (m *UserModel) Exists(id int) (bool, error) {
 	default:
 		return false, nil
 	}
+}
+
+func (m *UserModel) GetUserByID(id int) (*models.User, error) {
+	if id == 1 {
+		return &models.User{
+			Email:   "alice@example.com",
+			Created: time.Now(),
+			Name:    "Alice",
+		}, nil
+	}
+
+	return nil, fmt.Errorf("invalid ID")
+}
+
+func (m *UserModel) PasswordUpdate(id int, currentPassword, newPassword string) error {
+	if id == 1 {
+		if currentPassword != "pa$$word" {
+			return models.ErrInvalidCredentials
+		}
+		return nil
+	}
+	return models.ErrNoRecord
 }
