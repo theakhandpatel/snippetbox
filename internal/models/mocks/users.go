@@ -44,7 +44,7 @@ func (m *UserModel) GetUserByID(id int) (*models.User, error) {
 	return nil, fmt.Errorf("invalid ID")
 }
 
-func (m *UserModel) PasswordUpdate(id int, currentPassword, newPassword string) error {
+func (m *UserModel) UpdatePassword(id int, currentPassword string) error {
 	if id == 1 {
 		if currentPassword != "pa$$word" {
 			return models.ErrInvalidCredentials
